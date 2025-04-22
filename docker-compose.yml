@@ -7,7 +7,7 @@ services:
     depends_on:
       - mariadb
     entrypoint: ["/docker-entrypoint.sh"]
-    command: ["bash", "-c", "postal initialize && postal make-user && postal web-server"]
+    command: ["bash", "-c", "postal initialize && postal web-server"]
     volumes:
       - "./docker/ci-config:/config"
     environment:
@@ -23,10 +23,13 @@ services:
         mariadb:3306
       POSTAL_WEB_HOST: bakra.postal.pdevsecops.com
       POSTAL_WEB_PROTOCOL: https
-      POSTAL_INITIALIZE_ON_START: "true"
-      POSTAL_AUTO_INITIALIZE: "true"
       POSTAL_SMTP_PORT: 25
       POSTAL_WEB_PORT: 5000
+      POSTAL_USERNAME: admin
+      POSTAL_PASSWORD: password
+      POSTAL_EMAIL: admin@example.com
+      POSTAL_FIRST_NAME: Admin
+      POSTAL_LAST_NAME: User
     ports:
       - "5000:5000"
       - "25:25"
