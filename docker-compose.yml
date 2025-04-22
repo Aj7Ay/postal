@@ -1,9 +1,34 @@
 version: "3"
 services:
+  postal-init:
+    image: ghcr.io/postalserver/postal:3.3.4
+    depends_on:
+      - mariadb
+    restart: "no"
+    command: ["postal", "initialize"]
+    environment:
+      - POSTAL_SIGNING_KEY_PATH=/config/signing.key
+      - MAIN_DB_HOST=mariadb
+      - MAIN_DB_USERNAME=root
+      - MAIN_DB_PASSWORD=
+      - MESSAGE_DB_HOST=mariadb
+      - MESSAGE_DB_USERNAME=root
+      - MESSAGE_DB_PASSWORD=
+      - POSTAL_WEB_HOST=${POSTAL_WEB_HOST:-bakra.postal.pdevsecops.com}
+      - POSTAL_WEB_PROTOCOL=${POSTAL_WEB_PROTOCOL:-https}
+      - POSTAL_SECRET_KEY=${POSTAL_SECRET_KEY:-supersecretkey12345}
+      - WEB_SERVER_BIND_ADDRESS=0.0.0.0
+      - WEB_SERVER_PORT=5000
+      - WEB_SERVER_PROTOCOL=http
+      - LOGGING_STDOUT=true
+    volumes:
+      - postal_config:/config
+
   postal:
     image: ghcr.io/postalserver/postal:3.3.4
     depends_on:
       - mariadb
+      - postal-init
     restart: always
     command: ["postal", "web-server"]
     ports:
