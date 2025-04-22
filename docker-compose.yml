@@ -7,7 +7,7 @@ services:
     depends_on:
       - mariadb
     entrypoint: ["/docker-entrypoint.sh"]
-    command: ["bash", "-c", "echo \"web_server:\n  bind_address: 0.0.0.0\n  port: 5000\nsecret_key: $(openssl rand -hex 16)\" > /config/postal.yml && postal initialize && postal web-server"]
+    command: ["postal", "web-server", "--bind-address=0.0.0.0"]
     volumes:
       - "./docker/ci-config:/config"
     environment:
@@ -31,6 +31,7 @@ services:
       POSTAL_FIRST_NAME: Admin
       POSTAL_LAST_NAME: User
       POSTAL_BIND_ADDRESS: 0.0.0.0
+      POSTAL_SECRET_KEY: $(openssl rand -hex 16)
     ports:
       - "5000:5000"
       - "25:25"
