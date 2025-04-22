@@ -1,10 +1,11 @@
 version: "3"
 services:
   postal:
-    image: ghcr.io/postalserver/postal:latest
+    image: ghcr.io/postalserver/postal:3.3.4
     depends_on:
       - mariadb
     restart: always
+    command: ["bash", "-c", "postal initialize || true && postal web-server --bind-address=0.0.0.0"]
     ports:
       - "5000:5000"
       - "25:25"
@@ -23,7 +24,7 @@ services:
       - postal_config:/config
 
   mariadb:
-    image: mariadb:10.6
+    image: mariadb:11.7.2
     restart: always
     environment:
       - MARIADB_DATABASE=postal
