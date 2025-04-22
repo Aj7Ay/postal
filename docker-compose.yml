@@ -1,7 +1,7 @@
 version: "3"
 services:
   postal:
-    image: ghcr.io/postalserver/postal:3.0.0
+    image: ghcr.io/postalserver/postal:latest
     depends_on:
       - mariadb
     restart: always
