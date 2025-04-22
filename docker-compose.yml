@@ -1,7 +1,9 @@
 version: "3"
 services:
   postal:
-    image: gomailer/postal
+    build:
+      context: .
+      target: full
     depends_on:
       - mariadb
     entrypoint: ["/docker-entrypoint.sh"]
