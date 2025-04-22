@@ -5,7 +5,7 @@ services:
     depends_on:
       - mariadb
     restart: always
-    command: ["bash", "-c", "postal initialize || true && postal web-server --bind-address=0.0.0.0"]
+    command: ["postal", "web-server"]
     ports:
       - "5000:5000"
       - "25:25"
@@ -17,9 +17,13 @@ services:
       - MESSAGE_DB_HOST=mariadb
       - MESSAGE_DB_USERNAME=root
       - MESSAGE_DB_PASSWORD=
-      - POSTAL_WEB_HOST=${POSTAL_WEB_HOST}
-      - POSTAL_WEB_PROTOCOL=${POSTAL_WEB_PROTOCOL}
-      - POSTAL_SECRET_KEY=${POSTAL_SECRET_KEY}
+      - POSTAL_WEB_HOST=${POSTAL_WEB_HOST:-bakra.postal.pdevsecops.com}
+      - POSTAL_WEB_PROTOCOL=${POSTAL_WEB_PROTOCOL:-https}
+      - POSTAL_SECRET_KEY=${POSTAL_SECRET_KEY:-supersecretkey12345}
+      - WEB_SERVER_BIND_ADDRESS=0.0.0.0
+      - WEB_SERVER_PORT=5000
+      - WEB_SERVER_PROTOCOL=http
+      - LOGGING_STDOUT=true
     volumes:
       - postal_config:/config
 
