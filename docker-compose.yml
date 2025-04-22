@@ -1,40 +1,38 @@
 version: "3"
 services:
   postal:
-    build:
-      context: .
-      target: full
+    image: ghcr.io/postalserver/postal:3.0.0
     depends_on:
       - mariadb
-    entrypoint: ["/docker-entrypoint.sh"]
-    command: ["postal", "web-server", "--bind-address=0.0.0.0"]
-    environment:
-      POSTAL_SIGNING_KEY_PATH: /config/signing.key
-      MAIN_DB_HOST: mariadb
-      MAIN_DB_USERNAME: root
-      MESSAGE_DB_HOST: mariadb
-      MESSAGE_DB_USERNAME: root
-      RAILS_ENVIRONMENT: production
-      RAILS_LOG_ENABLED: "true"
-      POSTAL_WEB_HOST: bakra.postal.pdevsecops.com
-      POSTAL_WEB_PROTOCOL: https
-      POSTAL_SMTP_PORT: 25
-      POSTAL_WEB_PORT: 5000
-      POSTAL_SECRET_KEY: supersecretkey12345
+    restart: always
     ports:
       - "5000:5000"
       - "25:25"
-    restart: unless-stopped
+    environment:
+      - POSTAL_SIGNING_KEY_PATH=/config/signing.key
+      - MAIN_DB_HOST=mariadb
+      - MAIN_DB_USERNAME=root
+      - MAIN_DB_PASSWORD=
+      - MESSAGE_DB_HOST=mariadb
+      - MESSAGE_DB_USERNAME=root
+      - MESSAGE_DB_PASSWORD=
+      - POSTAL_WEB_HOST=${POSTAL_WEB_HOST}
+      - POSTAL_WEB_PROTOCOL=${POSTAL_WEB_PROTOCOL}
+      - POSTAL_SECRET_KEY=${POSTAL_SECRET_KEY}
+    volumes:
+      - postal_config:/config
 
   mariadb:
-    image: mariadb
+    image: mariadb:10.6
     restart: always
     environment:
-      MARIADB_DATABASE: postal
-      MARIADB_ALLOW_EMPTY_PASSWORD: 'yes'
-      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 'yes'
+      - MARIADB_DATABASE=postal
+      - MARIADB_ALLOW_EMPTY_PASSWORD=yes
+      - MARIADB_ALLOW_EMPTY_ROOT_PASSWORD=yes
+    command: --innodb-log-file-size=256M
     volumes:
       - mariadb_data:/var/lib/mysql
 
 volumes:
+  postal_config:
   mariadb_data:
