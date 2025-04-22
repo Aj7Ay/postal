@@ -10,6 +10,11 @@ services:
     command: --innodb-log-file-size=256M
     volumes:
       - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   rabbitmq:
     image: rabbitmq:3.9
@@ -20,6 +25,11 @@ services:
       - RABBITMQ_DEFAULT_VHOST=postal
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq/mnesia/
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   web:
     image: ghcr.io/postalserver/postal:3.3.4
@@ -50,6 +60,14 @@ services:
       - WAIT_FOR_TARGETS=mariadb:3306 rabbitmq:5672
     volumes:
       - postal_config:/config
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    labels:
+      coolify.healthcheck.path: "/health"
 
   smtp:
     image: ghcr.io/postalserver/postal:3.3.4
@@ -80,6 +98,11 @@ services:
       - WAIT_FOR_TARGETS=mariadb:3306 rabbitmq:5672
     volumes:
       - postal_config:/config
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "25"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   worker1:
     image: ghcr.io/postalserver/postal:3.3.4
@@ -106,6 +129,11 @@ services:
       - WAIT_FOR_TARGETS=mariadb:3306 rabbitmq:5672
     volumes:
       - postal_config:/config
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   worker2:
     image: ghcr.io/postalserver/postal:3.3.4
@@ -132,6 +160,11 @@ services:
       - WAIT_FOR_TARGETS=mariadb:3306 rabbitmq:5672
     volumes:
       - postal_config:/config
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   cron:
     image: ghcr.io/postalserver/postal:3.3.4
