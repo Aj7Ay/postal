@@ -6,17 +6,17 @@ services:
     environment:
       - MARIADB_DATABASE=postal
       - MARIADB_ROOT_PASSWORD=postal
-      - MARIADB_ROOT_HOST=%
+      - MARIADB_USER=postal
+      - MARIADB_PASSWORD=postal
     command: --innodb-log-file-size=256M
     volumes:
       - mariadb_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-ppostal"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    ports:
-      - "127.0.0.1:3306:3306"
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
   rabbitmq:
     image: rabbitmq:3.9
@@ -29,28 +29,27 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq/mnesia/
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
   web:
     image: ghcr.io/postalserver/postal:3.3.4
     command: postal web-server
     depends_on:
-      mariadb:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+      - mariadb
+      - rabbitmq
     restart: unless-stopped
     ports:
       - "5000:5000"
     environment:
       - POSTAL_SIGNING_KEY_PATH=/config/signing.key
       - MAIN_DB_HOST=mariadb
-      - MAIN_DB_USERNAME=root
+      - MAIN_DB_USERNAME=postal
       - MAIN_DB_PASSWORD=postal
       - MESSAGE_DB_HOST=mariadb
-      - MESSAGE_DB_USERNAME=root
+      - MESSAGE_DB_USERNAME=postal
       - MESSAGE_DB_PASSWORD=postal
       - POSTAL_WEB_HOST=${POSTAL_WEB_HOST:-postal.yourdomain.com}
       - POSTAL_WEB_PROTOCOL=${POSTAL_WEB_PROTOCOL:-https}
@@ -63,31 +62,23 @@ services:
       - RABBITMQ_VHOST=postal
     volumes:
       - postal_config:/config
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
 
   smtp:
     image: ghcr.io/postalserver/postal:3.3.4
     command: postal smtp-server
     depends_on:
-      mariadb:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+      - mariadb
+      - rabbitmq
     restart: unless-stopped
     ports:
       - "25:25"
     environment:
       - POSTAL_SIGNING_KEY_PATH=/config/signing.key
       - MAIN_DB_HOST=mariadb
-      - MAIN_DB_USERNAME=root
+      - MAIN_DB_USERNAME=postal
       - MAIN_DB_PASSWORD=postal
       - MESSAGE_DB_HOST=mariadb
-      - MESSAGE_DB_USERNAME=root
+      - MESSAGE_DB_USERNAME=postal
       - MESSAGE_DB_PASSWORD=postal
       - POSTAL_WEB_HOST=${POSTAL_WEB_HOST:-postal.yourdomain.com}
       - POSTAL_WEB_PROTOCOL=${POSTAL_WEB_PROTOCOL:-https}
@@ -100,28 +91,21 @@ services:
       - RABBITMQ_VHOST=postal
     volumes:
       - postal_config:/config
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "25"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   worker1:
     image: ghcr.io/postalserver/postal:3.3.4
     command: postal worker
     depends_on:
-      mariadb:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+      - mariadb
+      - rabbitmq
     restart: unless-stopped
     environment:
       - POSTAL_SIGNING_KEY_PATH=/config/signing.key
       - MAIN_DB_HOST=mariadb
-      - MAIN_DB_USERNAME=root
+      - MAIN_DB_USERNAME=postal
       - MAIN_DB_PASSWORD=postal
       - MESSAGE_DB_HOST=mariadb
-      - MESSAGE_DB_USERNAME=root
+      - MESSAGE_DB_USERNAME=postal
       - MESSAGE_DB_PASSWORD=postal
       - POSTAL_WEB_HOST=${POSTAL_WEB_HOST:-postal.yourdomain.com}
       - POSTAL_WEB_PROTOCOL=${POSTAL_WEB_PROTOCOL:-https}
@@ -132,28 +116,21 @@ services:
       - RABBITMQ_VHOST=postal
     volumes:
       - postal_config:/config
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9090/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   worker2:
     image: ghcr.io/postalserver/postal:3.3.4
     command: postal worker
     depends_on:
-      mariadb:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+      - mariadb
+      - rabbitmq
     restart: unless-stopped
     environment:
       - POSTAL_SIGNING_KEY_PATH=/config/signing.key
       - MAIN_DB_HOST=mariadb
-      - MAIN_DB_USERNAME=root
+      - MAIN_DB_USERNAME=postal
       - MAIN_DB_PASSWORD=postal
       - MESSAGE_DB_HOST=mariadb
-      - MESSAGE_DB_USERNAME=root
+      - MESSAGE_DB_USERNAME=postal
       - MESSAGE_DB_PASSWORD=postal
       - POSTAL_WEB_HOST=${POSTAL_WEB_HOST:-postal.yourdomain.com}
       - POSTAL_WEB_PROTOCOL=${POSTAL_WEB_PROTOCOL:-https}
@@ -164,28 +141,21 @@ services:
       - RABBITMQ_VHOST=postal
     volumes:
       - postal_config:/config
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9090/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   cron:
     image: ghcr.io/postalserver/postal:3.3.4
     command: postal cron
     depends_on:
-      mariadb:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+      - mariadb
+      - rabbitmq
     restart: unless-stopped
     environment:
       - POSTAL_SIGNING_KEY_PATH=/config/signing.key
       - MAIN_DB_HOST=mariadb
-      - MAIN_DB_USERNAME=root
+      - MAIN_DB_USERNAME=postal
       - MAIN_DB_PASSWORD=postal
       - MESSAGE_DB_HOST=mariadb
-      - MESSAGE_DB_USERNAME=root
+      - MESSAGE_DB_USERNAME=postal
       - MESSAGE_DB_PASSWORD=postal
       - POSTAL_WEB_HOST=${POSTAL_WEB_HOST:-postal.yourdomain.com}
       - POSTAL_WEB_PROTOCOL=${POSTAL_WEB_PROTOCOL:-https}
@@ -207,10 +177,10 @@ services:
     environment:
       - POSTAL_SIGNING_KEY_PATH=/config/signing.key
       - MAIN_DB_HOST=mariadb
-      - MAIN_DB_USERNAME=root
+      - MAIN_DB_USERNAME=postal
       - MAIN_DB_PASSWORD=postal
       - MESSAGE_DB_HOST=mariadb
-      - MESSAGE_DB_USERNAME=root
+      - MESSAGE_DB_USERNAME=postal
       - MESSAGE_DB_PASSWORD=postal
       - POSTAL_WEB_HOST=${POSTAL_WEB_HOST:-postal.yourdomain.com}
       - POSTAL_WEB_PROTOCOL=${POSTAL_WEB_PROTOCOL:-https}
