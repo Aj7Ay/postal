@@ -1,12 +1,11 @@
-version: "3"
+version: "3.9"
 services:
   mariadb:
     image: mariadb:11.7.2
     restart: unless-stopped
     environment:
       - MARIADB_DATABASE=postal
-      - MARIADB_ALLOW_EMPTY_PASSWORD=yes
-      - MARIADB_ALLOW_EMPTY_ROOT_PASSWORD=yes
+      - MARIADB_ROOT_PASSWORD=postal
     command: --innodb-log-file-size=256M
     volumes:
       - mariadb_data:/var/lib/mysql
@@ -15,6 +14,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+    ports:
+      - "127.0.0.1:3306:3306"
 
   rabbitmq:
     image: rabbitmq:3.9
@@ -44,11 +45,11 @@ services:
       - POSTAL_SIGNING_KEY_PATH=/config/signing.key
       - MAIN_DB_HOST=mariadb
       - MAIN_DB_USERNAME=root
-      - MAIN_DB_PASSWORD=
+      - MAIN_DB_PASSWORD=postal
       - MESSAGE_DB_HOST=mariadb
       - MESSAGE_DB_USERNAME=root
-      - MESSAGE_DB_PASSWORD=
-      - POSTAL_WEB_HOST=${POSTAL_WEB_HOST:-bakra.postal.pdevsecops.com}
+      - MESSAGE_DB_PASSWORD=postal
+      - POSTAL_WEB_HOST=${POSTAL_WEB_HOST:-postal.yourdomain.com}
       - POSTAL_WEB_PROTOCOL=${POSTAL_WEB_PROTOCOL:-https}
       - POSTAL_SECRET_KEY=${POSTAL_SECRET_KEY:-supersecretkey12345}
       - WEB_SERVER_BIND_ADDRESS=0.0.0.0
@@ -82,11 +83,11 @@ services:
       - POSTAL_SIGNING_KEY_PATH=/config/signing.key
       - MAIN_DB_HOST=mariadb
       - MAIN_DB_USERNAME=root
-      - MAIN_DB_PASSWORD=
+      - MAIN_DB_PASSWORD=postal
       - MESSAGE_DB_HOST=mariadb
       - MESSAGE_DB_USERNAME=root
-      - MESSAGE_DB_PASSWORD=
-      - POSTAL_WEB_HOST=${POSTAL_WEB_HOST:-bakra.postal.pdevsecops.com}
+      - MESSAGE_DB_PASSWORD=postal
+      - POSTAL_WEB_HOST=${POSTAL_WEB_HOST:-postal.yourdomain.com}
       - POSTAL_WEB_PROTOCOL=${POSTAL_WEB_PROTOCOL:-https}
       - POSTAL_SECRET_KEY=${POSTAL_SECRET_KEY:-supersecretkey12345}
       - SMTP_SERVER_BIND_ADDRESS=0.0.0.0
@@ -104,7 +105,7 @@ services:
       timeout: 5s
       retries: 3
 
-  worker1:
+  worker:
     image: ghcr.io/postalserver/postal:3.3.4
     command: postal worker
     depends_on:
@@ -115,11 +116,11 @@ services:
       - POSTAL_SIGNING_KEY_PATH=/config/signing.key
       - MAIN_DB_HOST=mariadb
       - MAIN_DB_USERNAME=root
-      - MAIN_DB_PASSWORD=
+      - MAIN_DB_PASSWORD=postal
       - MESSAGE_DB_HOST=mariadb
       - MESSAGE_DB_USERNAME=root
-      - MESSAGE_DB_PASSWORD=
-      - POSTAL_WEB_HOST=${POSTAL_WEB_HOST:-bakra.postal.pdevsecops.com}
+      - MESSAGE_DB_PASSWORD=postal
+      - POSTAL_WEB_HOST=${POSTAL_WEB_HOST:-postal.yourdomain.com}
       - POSTAL_WEB_PROTOCOL=${POSTAL_WEB_PROTOCOL:-https}
       - POSTAL_SECRET_KEY=${POSTAL_SECRET_KEY:-supersecretkey12345}
       - RABBITMQ_HOST=rabbitmq
@@ -134,37 +135,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
-
-  worker2:
-    image: ghcr.io/postalserver/postal:3.3.4
-    command: postal worker
-    depends_on:
-      - mariadb
-      - rabbitmq
-    restart: unless-stopped
-    environment:
-      - POSTAL_SIGNING_KEY_PATH=/config/signing.key
-      - MAIN_DB_HOST=mariadb
-      - MAIN_DB_USERNAME=root
-      - MAIN_DB_PASSWORD=
-      - MESSAGE_DB_HOST=mariadb
-      - MESSAGE_DB_USERNAME=root
-      - MESSAGE_DB_PASSWORD=
-      - POSTAL_WEB_HOST=${POSTAL_WEB_HOST:-bakra.postal.pdevsecops.com}
-      - POSTAL_WEB_PROTOCOL=${POSTAL_WEB_PROTOCOL:-https}
-      - POSTAL_SECRET_KEY=${POSTAL_SECRET_KEY:-supersecretkey12345}
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_USERNAME=postal
-      - RABBITMQ_PASSWORD=postal
-      - RABBITMQ_VHOST=postal
-      - WAIT_FOR_TARGETS=mariadb:3306 rabbitmq:5672
-    volumes:
-      - postal_config:/config
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9090/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+    deploy:
+      replicas: 2
 
   cron:
     image: ghcr.io/postalserver/postal:3.3.4
@@ -177,11 +149,11 @@ services:
       - POSTAL_SIGNING_KEY_PATH=/config/signing.key
       - MAIN_DB_HOST=mariadb
       - MAIN_DB_USERNAME=root
-      - MAIN_DB_PASSWORD=
+      - MAIN_DB_PASSWORD=postal
       - MESSAGE_DB_HOST=mariadb
       - MESSAGE_DB_USERNAME=root
-      - MESSAGE_DB_PASSWORD=
-      - POSTAL_WEB_HOST=${POSTAL_WEB_HOST:-bakra.postal.pdevsecops.com}
+      - MESSAGE_DB_PASSWORD=postal
+      - POSTAL_WEB_HOST=${POSTAL_WEB_HOST:-postal.yourdomain.com}
       - POSTAL_WEB_PROTOCOL=${POSTAL_WEB_PROTOCOL:-https}
       - POSTAL_SECRET_KEY=${POSTAL_SECRET_KEY:-supersecretkey12345}
       - RABBITMQ_HOST=rabbitmq
@@ -192,22 +164,22 @@ services:
     volumes:
       - postal_config:/config
 
-  init:
+  runner:
+    profiles: ["tools"]
     image: ghcr.io/postalserver/postal:3.3.4
-    command: ["bash", "-c", "until nc -z mariadb 3306 && nc -z rabbitmq 5672; do sleep 1; done && postal initialize || true"]
+    command: postal
     depends_on:
       - mariadb
       - rabbitmq
-    restart: "no"
     environment:
       - POSTAL_SIGNING_KEY_PATH=/config/signing.key
       - MAIN_DB_HOST=mariadb
       - MAIN_DB_USERNAME=root
-      - MAIN_DB_PASSWORD=
+      - MAIN_DB_PASSWORD=postal
       - MESSAGE_DB_HOST=mariadb
       - MESSAGE_DB_USERNAME=root
-      - MESSAGE_DB_PASSWORD=
-      - POSTAL_WEB_HOST=${POSTAL_WEB_HOST:-bakra.postal.pdevsecops.com}
+      - MESSAGE_DB_PASSWORD=postal
+      - POSTAL_WEB_HOST=${POSTAL_WEB_HOST:-postal.yourdomain.com}
       - POSTAL_WEB_PROTOCOL=${POSTAL_WEB_PROTOCOL:-https}
       - POSTAL_SECRET_KEY=${POSTAL_SECRET_KEY:-supersecretkey12345}
       - RABBITMQ_HOST=rabbitmq
