@@ -6,11 +6,12 @@ services:
     environment:
       - MARIADB_DATABASE=postal
       - MARIADB_ROOT_PASSWORD=postal
+      - MARIADB_ROOT_HOST=%
     command: --innodb-log-file-size=256M
     volumes:
       - mariadb_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-ppostal"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -36,8 +37,10 @@ services:
     image: ghcr.io/postalserver/postal:3.3.4
     command: postal web-server
     depends_on:
-      - mariadb
-      - rabbitmq
+      mariadb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     restart: unless-stopped
     ports:
       - "5000:5000"
@@ -58,7 +61,6 @@ services:
       - RABBITMQ_USERNAME=postal
       - RABBITMQ_PASSWORD=postal
       - RABBITMQ_VHOST=postal
-      - WAIT_FOR_TARGETS=mariadb:3306 rabbitmq:5672
     volumes:
       - postal_config:/config
     healthcheck:
@@ -72,8 +74,10 @@ services:
     image: ghcr.io/postalserver/postal:3.3.4
     command: postal smtp-server
     depends_on:
-      - mariadb
-      - rabbitmq
+      mariadb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     restart: unless-stopped
     ports:
       - "25:25"
@@ -94,7 +98,6 @@ services:
       - RABBITMQ_USERNAME=postal
       - RABBITMQ_PASSWORD=postal
       - RABBITMQ_VHOST=postal
-      - WAIT_FOR_TARGETS=mariadb:3306 rabbitmq:5672
     volumes:
       - postal_config:/config
     healthcheck:
@@ -107,8 +110,10 @@ services:
     image: ghcr.io/postalserver/postal:3.3.4
     command: postal worker
     depends_on:
-      - mariadb
-      - rabbitmq
+      mariadb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     restart: unless-stopped
     environment:
       - POSTAL_SIGNING_KEY_PATH=/config/signing.key
@@ -125,7 +130,6 @@ services:
       - RABBITMQ_USERNAME=postal
       - RABBITMQ_PASSWORD=postal
       - RABBITMQ_VHOST=postal
-      - WAIT_FOR_TARGETS=mariadb:3306 rabbitmq:5672
     volumes:
       - postal_config:/config
     healthcheck:
@@ -138,8 +142,10 @@ services:
     image: ghcr.io/postalserver/postal:3.3.4
     command: postal worker
     depends_on:
-      - mariadb
-      - rabbitmq
+      mariadb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     restart: unless-stopped
     environment:
       - POSTAL_SIGNING_KEY_PATH=/config/signing.key
@@ -156,7 +162,6 @@ services:
       - RABBITMQ_USERNAME=postal
       - RABBITMQ_PASSWORD=postal
       - RABBITMQ_VHOST=postal
-      - WAIT_FOR_TARGETS=mariadb:3306 rabbitmq:5672
     volumes:
       - postal_config:/config
     healthcheck:
@@ -169,8 +174,10 @@ services:
     image: ghcr.io/postalserver/postal:3.3.4
     command: postal cron
     depends_on:
-      - mariadb
-      - rabbitmq
+      mariadb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     restart: unless-stopped
     environment:
       - POSTAL_SIGNING_KEY_PATH=/config/signing.key
@@ -187,17 +194,16 @@ services:
       - RABBITMQ_USERNAME=postal
       - RABBITMQ_PASSWORD=postal
       - RABBITMQ_VHOST=postal
-      - WAIT_FOR_TARGETS=mariadb:3306 rabbitmq:5672
     volumes:
       - postal_config:/config
 
-  runner:
-    profiles: ["tools"]
+  init:
     image: ghcr.io/postalserver/postal:3.3.4
-    command: postal
+    command: ["bash", "-c", "until nc -z mariadb 3306 && nc -z rabbitmq 5672; do sleep 1; done && postal initialize || true"]
     depends_on:
       - mariadb
       - rabbitmq
+    restart: "no"
     environment:
       - POSTAL_SIGNING_KEY_PATH=/config/signing.key
       - MAIN_DB_HOST=mariadb
